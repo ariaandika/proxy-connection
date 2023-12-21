@@ -1,5 +1,5 @@
 {
-  "name": "bun-template",
+  "name": "bun",
   "module": "src/index.ts",
   "type": "module",
   "devDependencies": {
