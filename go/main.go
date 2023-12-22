@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -10,28 +11,52 @@ import (
 )
 
 func main() {
-
-  port := getPort()
-
-  signleHostProxy(port)
+  singleHostProxy()
 }
 
-func signleHostProxy(port string) {
-  url, urlErr := url.Parse("http://localhost:8000")
-
-  if urlErr != nil {
-    log.Fatal("Invalid url", url)
-  }
-
-  url.Host = url.Hostname() + ":" + port
-
+func singleHostProxy() {
+  cert, key := getTls()
+  url := getProxyUrl()
   proxy := httputil.NewSingleHostReverseProxy(url)
-
-  httpErr := http.ListenAndServe(":3000", proxy)
   
-  if httpErr != nil {
-    log.Fatal("Failed to listen and serve ", httpErr)
+  if cert != "" && key != "" {
+    log.Fatal(http.ListenAndServeTLS(getPort(), cert, key, proxy))
+  } else {
+    log.Fatal(http.ListenAndServe(getPort(), proxy))
   }
+}
+
+func panic(val *url.URL, err error) *url.URL {
+  if err != nil {
+    log.Fatal("Invalid url", val)
+  }
+
+  return val
+}
+
+func getProxyUrl() *url.URL {
+  envs := os.Environ()
+
+  u := ""
+
+  for _, elem := range envs {
+    s := strings.Split(elem, "=")
+    if s[0] == "TARGET" {
+      u = fmt.Sprintf("http://localhost:%s", s[1])
+    }
+  }
+
+  if u == "" {
+    log.Fatal("must provide TARGET env vars")
+  }
+
+  ur, err := url.Parse(u)
+
+  if err != nil {
+    log.Fatal("Invalid url", ur)
+  }
+
+  return ur
 }
 
 func getPort() string {
@@ -39,20 +64,28 @@ func getPort() string {
 
   for _, elem := range envs {
     s := strings.Split(elem, "=")
-    if s[0] == "TARGET" {
-      return s[1]
+    if s[0] == "PORT" {
+      return fmt.Sprintf(":%s", s[1])
     }
   }
 
-  log.Fatal("must provide TARGET env vars")
-  return ""
+  return ":3000"
+}
 
-  // file, err := os.ReadFile("../config")
-  // if err != nil { log.Fatal(err) }
-  //
-  // content := string(file)
-  //
-  // port := strings.Split(content, "\n")[0]
-  //
-  // return port
+func getTls() (string, string) {
+  envs := os.Environ()
+
+  cert := ""
+  key := ""
+
+  for _, elem := range envs {
+    s := strings.Split(elem, "=")
+    if s[0] == "CERT" {
+      cert = s[1]
+    } else if s[0] == "KEY" {
+      key = s[1]
+    }
+  }
+
+  return cert, key
 }
