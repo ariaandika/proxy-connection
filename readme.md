@@ -18,13 +18,13 @@ there also a tcp level proxy, where proxy does not care what protocol it uses
 ## running
 
 ```bash
-CERT=/cert.pem KEY=/key.pem PORT=3000 go run main.go
+CERT=/cert.pem KEY=/key.pem PORT=3000 TARGET_1=deuzo.me:8000 go run main.go
 bun run src/index.ts
 cargo run
 ```
 
-> currently both bun and rust listen to 8000
-> switching port is wip
+For current configuration, TARGET_1 env is proxy target. The number does not
+matter as long as its start with TARGET, this is to provide multiple host
 
 ## Subject
 

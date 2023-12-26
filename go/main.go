@@ -15,77 +15,62 @@ func main() {
 }
 
 func singleHostProxy() {
-  cert, key := getTls()
-  url := getProxyUrl()
-  proxy := httputil.NewSingleHostReverseProxy(url)
+  port, cert, key, hosts := setupConfig()
+
+  // proxy := httputil.NewSingleHostReverseProxy(targetUrl)
+
+  proxy := &httputil.ReverseProxy{
+    Rewrite: func(r *httputil.ProxyRequest) {
+      if hosts[r.In.Host] != nil {
+        r.SetURL(hosts[r.In.Host])
+      }
+    },
+  }
+
+  fmt.Printf("[go    public] Serving %s\n", port)
   
   if cert != "" && key != "" {
-    log.Fatal(http.ListenAndServeTLS(getPort(), cert, key, proxy))
+    fmt.Println("tls enabled")
+    log.Fatal(http.ListenAndServeTLS(port, cert, key, proxy))
   } else {
-    log.Fatal(http.ListenAndServe(getPort(), proxy))
+    log.Fatal(http.ListenAndServe(port, proxy))
   }
 }
 
-func panic(val *url.URL, err error) *url.URL {
-  if err != nil {
-    log.Fatal("Invalid url", val)
-  }
 
-  return val
-}
-
-func getProxyUrl() *url.URL {
+func setupConfig() (string, string, string, map[string]*url.URL) {
   envs := os.Environ()
-
-  u := ""
-
-  for _, elem := range envs {
-    s := strings.Split(elem, "=")
-    if s[0] == "TARGET" {
-      u = fmt.Sprintf("http://localhost:%s", s[1])
-    }
-  }
-
-  if u == "" {
-    log.Fatal("must provide TARGET env vars")
-  }
-
-  ur, err := url.Parse(u)
-
-  if err != nil {
-    log.Fatal("Invalid url", ur)
-  }
-
-  return ur
-}
-
-func getPort() string {
-  envs := os.Environ()
-
-  for _, elem := range envs {
-    s := strings.Split(elem, "=")
-    if s[0] == "PORT" {
-      return fmt.Sprintf(":%s", s[1])
-    }
-  }
-
-  return ":3000"
-}
-
-func getTls() (string, string) {
-  envs := os.Environ()
-
+  
+  port := ":3000"
   cert := ""
   key := ""
 
+  hosts := make(map[string]*url.URL)
+
   for _, elem := range envs {
     s := strings.Split(elem, "=")
+
     if s[0] == "CERT" {
       cert = s[1]
     } else if s[0] == "KEY" {
       key = s[1]
+    } else if s[0] == "PORT" {
+      port = fmt.Sprint(":", s[1])
+    // } else if s[0] == "TARGET" {
+    //   u = fmt.Sprintf("http://localhost:%s", s[1])
+    } else if strings.HasPrefix(s[0], "TARGET") {
+      host := strings.Split(s[1], ":")
+
+      ur, err := url.Parse(fmt.Sprintf("http://127.0.0.1:%s", host[1]))
+
+      if err != nil {
+        log.Fatal("Invalid target url", err)
+      }
+
+      hosts[host[0]] = ur
     }
   }
 
-  return cert, key
+  return port, cert, key, hosts
 }
+
