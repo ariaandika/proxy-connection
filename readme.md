@@ -7,12 +7,28 @@ in nginx, thats the case
 
 - should we even use HTTP/2.0 for server to server inside private network ?
 
-actix only enable HTTP/2.0 when using ssl,
-do we need ssl inside a private network ?
+tls and http2 can be unecessary overhead for localhost call
+
+so the goal is to make go serve http2 to the client while having http/1.1 for the backend
+
+opening two connection and having protocol translation is fine, this is called http level proxy
+
+there also a tcp level proxy, where proxy does not care what protocol it uses
+
+## running
+
+```bash
+CERT=/cert.pem KEY=/key.pem PORT=3000 go run main.go
+bun run src/index.ts
+cargo run
+```
+
+> currently both bun and rust listen to 8000
+> switching port is wip
 
 ## Subject
 
-bun, backend with only HTTP/1.1
-rust, backend that support HTTP/2.0 via actix
 go, the easiest reverse proxy server and tls
+rust, backend that support HTTP/2.0 via actix
+bun, backend with only HTTP/1.1
 
