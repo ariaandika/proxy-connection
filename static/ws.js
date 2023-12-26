@@ -1,5 +1,7 @@
 
-const ws = new WebSocket(`ws://${window.location.host}/api/ws`);
+const proto = window.location.protocol == "https:" ? "wss" : "ws"
+
+const ws = new WebSocket(`${proto}://${window.location.host}/api/ws`);
 
 ws.onopen = onopen;
 ws.onmessage = wsmsg;
