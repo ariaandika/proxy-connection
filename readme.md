@@ -19,7 +19,7 @@ there also a tcp level proxy, where proxy does not care what protocol it uses
 
 ```bash
 CERT=/cert.pem KEY=/key.pem PORT=3000 TARGET_1=deuzo.me:8000 go run main.go
-bun run src/index.ts
+PORT=4000 bun run src/index.ts
 cargo run
 ```
 
@@ -31,4 +31,11 @@ matter as long as its start with TARGET, this is to provide multiple host
 go, the easiest reverse proxy server and tls
 rust, backend that support HTTP/2.0 via actix
 bun, backend with only HTTP/1.1
+
+## Result
+
+- Go can serve HTTP/2 with bun that only support HTTP/1.1
+
+note that in go were not using `httputil.NewSingleHostReverseProxy`,
+but use `&ReverseProxy` struct instead
 

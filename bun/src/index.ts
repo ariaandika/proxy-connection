@@ -52,7 +52,6 @@ Bun.serve({
     },
   },
 
-  port: 8000
 })
 
 const files = [
